@@ -3,6 +3,7 @@ import { effectScope, nextTick, ref } from "vue";
 import { useEffect, useState } from "react";
 import { flushTapSync } from "@assistant-ui/tap";
 import { toComposable } from "../src/toComposable";
+import { toSyncCallbacks } from "../src/toSyncCallbacks";
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -17,7 +18,7 @@ const useCount = (initialValue: number) => {
   return { count, bump };
 };
 
-test("method calls update state synchronously", () => {
+test("method calls land on the async scheduler by default", async () => {
   const useVueCount = toComposable(useCount);
   const scope = effectScope();
 
@@ -25,14 +26,27 @@ test("method calls update state synchronously", () => {
   expect(state.value.count).toBe(5);
 
   state.value.bump();
+  expect(state.value.count).toBe(5); // not yet flushed
+  await flush();
   expect(state.value.count).toBe(6);
 });
 
-test("method identity is stable across reads", () => {
+test("toSyncCallbacks: method calls update state synchronously", () => {
   const useVueCount = toComposable(useCount);
   const scope = effectScope();
 
-  const state = scope.run(() => useVueCount(0))!;
+  const state = scope.run(() => toSyncCallbacks(useVueCount(5)))!;
+  expect(state.value.count).toBe(5);
+
+  state.value.bump();
+  expect(state.value.count).toBe(6);
+});
+
+test("toSyncCallbacks: method identity is stable across reads", () => {
+  const useVueCount = toComposable(useCount);
+  const scope = effectScope();
+
+  const state = scope.run(() => toSyncCallbacks(useVueCount(0)))!;
   expect(state.value.bump).toBe(state.value.bump);
 });
 
@@ -41,8 +55,8 @@ test("instances are isolated", () => {
   const scopeA = effectScope();
   const scopeB = effectScope();
 
-  const a = scopeA.run(() => useVueCount(0))!;
-  const b = scopeB.run(() => useVueCount(10))!;
+  const a = scopeA.run(() => toSyncCallbacks(useVueCount(0)))!;
+  const b = scopeB.run(() => toSyncCallbacks(useVueCount(10)))!;
 
   a.value.bump();
 
@@ -59,7 +73,7 @@ test("reactive args re-render the hook, state survives", async () => {
 
   const step = ref(1);
   const scope = effectScope();
-  const state = scope.run(() => useVueStepCount(step))!;
+  const state = scope.run(() => toSyncCallbacks(useVueStepCount(step)))!;
 
   state.value.bump();
   expect(state.value.count).toBe(1);
@@ -169,7 +183,7 @@ test("SSR: renders a snapshot without mounting effects", () => {
   expect(log).toEqual([]);
 });
 
-test("errors during re-render throw at the method call site", () => {
+test("toSyncCallbacks: errors during re-render throw at the method call site", () => {
   const useBomb = () => {
     const [count, setCount] = useState(0);
     if (count === 1) throw new Error("boom");
@@ -178,7 +192,7 @@ test("errors during re-render throw at the method call site", () => {
   const useVueBomb = toComposable(useBomb);
 
   const scope = effectScope();
-  const state = scope.run(() => useVueBomb())!;
+  const state = scope.run(() => toSyncCallbacks(useVueBomb()))!;
 
   expect(() => state.value.bump()).toThrow("boom");
 });

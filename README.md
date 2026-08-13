@@ -64,11 +64,15 @@ Templates auto-unwrap, so `{{ count }}` and `@click="bump"` work directly. Don't
 
 ## Synchronous updates
 
-Updates triggered through the hook's returned functions are synchronous, matching Vue's mutation semantics:
+Updates land on tap's async scheduler by default: after calling `bump()`, the new `count` appears a tick later. If you want Vue's mutation semantics — call a function, read the updated state immediately — wrap the ref with `toSyncCallbacks`:
 
 ```ts
+import { toSyncCallbacks } from "tap-vue";
+
+const counter = toSyncCallbacks(useVueCount(5));
+
 counter.value.bump();
 counter.value.count; // already updated
 ```
 
-Errors thrown by the hook during such a re-render throw at the call site. Updates from other sources (timers, subscriptions inside the hook) land on tap's async scheduler; use `flushTapSync` from `@assistant-ui/tap` if you need to force those synchronously.
+`toSyncCallbacks` returns a ref whose functions (including those nested on the snapshot) flush the hook's re-render synchronously before returning. Errors thrown by the hook during such a re-render throw at the call site. Updates from other sources (timers, subscriptions inside the hook) still land on the async scheduler; use `flushTapSync` from `@assistant-ui/tap` if you need to force those synchronously.

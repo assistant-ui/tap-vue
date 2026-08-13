@@ -3,6 +3,7 @@ import { computed, effectScope, isRef } from "vue";
 import { toRefs } from "@vueuse/core";
 import { useState } from "react";
 import { toComposable } from "../src/toComposable";
+import { toSyncCallbacks } from "../src/toSyncCallbacks";
 
 const useCount = (initialValue: number) => {
   const [count, setCount] = useState(initialValue);
@@ -14,7 +15,7 @@ test("VueUse toRefs: destructured value refs stay reactive", () => {
   const useVueCount = toComposable(useCount);
   const scope = effectScope();
 
-  const { count, bump } = scope.run(() => toRefs(useVueCount(0)))!;
+  const { count, bump } = scope.run(() => toRefs(toSyncCallbacks(useVueCount(0))))!;
 
   expect(isRef(count)).toBe(true);
   expect(count.value).toBe(0);
@@ -31,7 +32,7 @@ test("VueUse toRefs: function keys come out as refs, not plain functions", () =>
   const useVueCount = toComposable(useCount);
   const scope = effectScope();
 
-  const { bump } = scope.run(() => toRefs(useVueCount(0)))!;
+  const { bump } = scope.run(() => toRefs(toSyncCallbacks(useVueCount(0))))!;
 
   // storeToRefs would pass `bump` through as a function; VueUse toRefs wraps
   // every key, so script usage needs `.value` (templates auto-unwrap).
@@ -43,7 +44,7 @@ test("VueUse toRefs: writing to a ref does not corrupt hook state", () => {
   const useVueCount = toComposable(useCount);
   const scope = effectScope();
 
-  const state = scope.run(() => useVueCount(0))!;
+  const state = scope.run(() => toSyncCallbacks(useVueCount(0)))!;
   const { count } = toRefs(state);
 
   // VueUse toRefs is two-way: a write replaces the snapshot object. The next
