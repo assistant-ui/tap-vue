@@ -26,6 +26,7 @@
   "scripts": {
     "build": "aui-build",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=html --coverage.reporter=json-summary",
     "test:watch": "vitest"
   },
   "peerDependencies": {
@@ -34,12 +35,13 @@
   "devDependencies": {
     "@assistant-ui/x-buildutils": "^0.0.22",
     "@types/react": "^19.2.18",
+    "@vitest/coverage-v8": "^5.0.5",
     "@vueuse/core": "^14.4.0",
     "happy-dom": "^20.11.2",
     "prettier": "^3.6.2",
     "react": "^19.2.8",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10",
+    "vitest": "^5.0.5",
     "vue": "^3.5.13"
   },
   "license": "MIT",

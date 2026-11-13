@@ -76,3 +76,11 @@ counter.value.count; // already updated
 ```
 
 `toSyncCallbacks` returns a ref whose functions (including those nested on the snapshot) flush the hook's re-render synchronously before returning. Errors thrown by the hook during such a re-render throw at the call site. Updates from other sources (timers, subscriptions inside the hook) still land on the async scheduler; use `flushTapSync` from `@assistant-ui/tap` if you need to force those synchronously.
+
+## Development
+
+```bash
+pnpm install
+pnpm test           # run the suite
+pnpm test:coverage  # run it with coverage; thresholds live in vitest.config.ts
+```
